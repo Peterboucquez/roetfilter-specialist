@@ -6,6 +6,24 @@ header('Cache-Control: no-store');
 function finish(int $code,string $message): never {http_response_code($code);echo '<!doctype html><html lang="nl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aanvraag | Roetfilter Specialist</title><body style="font:17px system-ui;max-width:650px;margin:12vh auto;padding:20px"><h1>Roetfilter Specialist</h1><p>'.htmlspecialchars($message,ENT_QUOTES,'UTF-8').'</p><a href="/#aanvraag">Terug naar het formulier</a></body></html>';exit;}
 if($_SERVER['REQUEST_METHOD']!=='POST') finish(405,'Gebruik het aanvraagformulier op de website.');
 if(!empty($_POST['website'])) finish(200,'Bedankt voor je aanvraag.');
+
+// Beperk het totale verzoek voordat bijlagen in geheugen worden gelezen.
+if((int)($_SERVER['CONTENT_LENGTH']??0)>19000000)finish(413,'De aanvraag is te groot. Verklein de bijlagen en probeer opnieuw.');
+// Server-side limiet per IP: maximaal 3 pogingen per 30 minuten.
+// Gebruik een bestand met exclusieve lock zodat gelijktijdige aanvragen correct tellen.
+$ip=$_SERVER['REMOTE_ADDR']??'unknown';
+$limitPath=sys_get_temp_dir().'/roetfilter-form-'.hash('sha256',$ip).'.json';
+$handle=@fopen($limitPath,'c+');
+if($handle===false||!flock($handle,LOCK_EX))finish(503,'Aanvragen zijn tijdelijk niet beschikbaar. Probeer later opnieuw of bel ons.');
+$raw=stream_get_contents($handle);
+$now=time();$attempts=json_decode($raw?:'[]',true);
+if(!is_array($attempts))$attempts=[];
+$attempts=array_values(array_filter($attempts,static fn($t):bool=>is_int($t)&&$t>$now-1800));
+if(count($attempts)>=3){flock($handle,LOCK_UN);fclose($handle);finish(429,'Je hebt meerdere aanvragen verstuurd. Probeer over 30 minuten opnieuw of bel ons.');}
+$attempts[]=$now;
+rewind($handle);ftruncate($handle,0);
+fwrite($handle,json_encode($attempts));fflush($handle);flock($handle,LOCK_UN);fclose($handle);
+
 $origin=$_SERVER['HTTP_ORIGIN']??'';
 if($origin!==''&&!in_array(parse_url($origin,PHP_URL_HOST),['roetfilter-specialist.be','www.roetfilter-specialist.be'],true))finish(403,'Ongeldige aanvraag.');
 if(($_POST['akkoord']??'')!=='ja')finish(400,'Gelieve akkoord te gaan met de privacyverklaring.');
