@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /aanvraag.php
+Sitemap: https://roetfilter-specialist.be/sitemap.xml
