@@ -32,7 +32,7 @@ $data=[];
 foreach($fields as $key=>$max){$v=trim((string)($_POST[$key]??''));if(mb_strlen($v)>$max)finish(400,'Een veld bevat te veel tekst.');$data[$key]=preg_replace('/[\x00-\x1F\x7F]/u',' ',$v);}
 foreach(['naam','email','telefoon','wagen','probleem'] as $key){if($data[$key]==='')finish(400,'Vul alle verplichte velden in.');}
 if(!filter_var($data['email'],FILTER_VALIDATE_EMAIL))finish(400,'Controleer je e-mailadres.');
-$allowed=['Afgekeurd op de deeltjestest','Roetfilterlampje brandt','Vermogensverlies of regeneratieproblemen','Preventieve motorontkalking','Ander probleem'];
+$allowed=['Afgekeurd op de deeltjestest','Roetfilterlampje brandt','Vermogensverlies of regeneratieproblemen','Preventieve motorontkalking','Olieverbruik / PureTech','Katalysator reinigen (benzine)','Roetfilter reinigen (diesel)','Ander probleem'];
 if(!in_array($data['probleem'],$allowed,true))finish(400,'Ongeldige probleemkeuze.');
 $names=['inschrijving_voor'=>'Inschrijvingsbewijs voorkant','inschrijving_achter'=>'Inschrijvingsbewijs achterkant','keuring'=>'Keuringsbewijs deeltjestest','gelijkvormigheid'=>'Gelijkvormigheidsattest binnenkant'];
 $mimeTypes=['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp','application/pdf'=>'pdf'];
