@@ -3,7 +3,7 @@ declare(strict_types=1);
 header('Content-Type: text/html; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
 header('Cache-Control: no-store');
-function finish(int $code,string $message): never {http_response_code($code);echo '<!doctype html><html lang="nl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aanvraag | Roetfilter Specialist</title><body style="font:17px system-ui;max-width:650px;margin:12vh auto;padding:20px"><h1>Roetfilter Specialist</h1><p>'.htmlspecialchars($message,ENT_QUOTES,'UTF-8').'</p><a href="/#aanvraag">Terug naar het formulier</a></body></html>';exit;}
+function finish(int $code,string $message): never {$fr=(($_POST['lang']??'')==='fr');if($fr&&$code===200)$message='Merci ! Votre demande a bien été envoyée. Nous vous contacterons. Ceci ne constitue pas une confirmation de rendez-vous.';if($fr&&$code!==200)$message='Votre demande n’a pas pu être traitée. Veuillez réessayer ou nous contacter par téléphone au 059 33 33 11.';http_response_code($code);echo '<!doctype html><html lang="'.($fr?'fr':'nl').'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aanvraag | Roetfilter Specialist</title><body style="font:17px system-ui;max-width:650px;margin:12vh auto;padding:20px"><h1>Roetfilter Specialist</h1><p>'.htmlspecialchars($message,ENT_QUOTES,'UTF-8').'</p><a href="'.($fr?'/fr/#contact':'/#aanvraag').'">'.($fr?'Retour au formulaire':'Terug naar het formulier').'</a></body></html>';exit;}
 if($_SERVER['REQUEST_METHOD']!=='POST') finish(405,'Gebruik het aanvraagformulier op de website.');
 if(!empty($_POST['website'])) finish(200,'Bedankt voor je aanvraag.');
 
@@ -46,12 +46,13 @@ foreach($names as $field=>$label){
  $attachments[]=['name'=>$field.'.'.$mimeTypes[$mime],'type'=>$mime,'data'=>$bytes];
 }
 $boundary='rf-'.bin2hex(random_bytes(16));$eol="\r\n";
-$body="Nieuwe aanvraag via roetfilter-specialist.be".$eol.$eol;
+$fr=(($_POST['lang']??'')==='fr');
+$body="Nieuwe aanvraag via roetfilter-specialist.be".$eol."Taal / Langue: ".($fr?'FRANS / FRANÇAIS':'NEDERLANDS').$eol.$eol;
 foreach($data as $key=>$value)$body.=ucfirst(str_replace('_',' ',$key)).': '.$value.$eol;
 $body.=$eol.'Bijlagen: '.count($attachments).$eol;
 $message='--'.$boundary.$eol.'Content-Type: text/plain; charset=UTF-8'.$eol.'Content-Transfer-Encoding: base64'.$eol.$eol.chunk_split(base64_encode($body));
 foreach($attachments as $file){$message.='--'.$boundary.$eol.'Content-Type: '.$file['type'].'; name="'.$file['name'].'"'.$eol.'Content-Disposition: attachment; filename="'.$file['name'].'"'.$eol.'Content-Transfer-Encoding: base64'.$eol.$eol.chunk_split(base64_encode($file['data']));}
 $message.='--'.$boundary.'--'.$eol;
 $headers=['From: Roetfilter Specialist <info@roetfilter-specialist.be>','Reply-To: '.$data['email'],'MIME-Version: 1.0','Content-Type: multipart/mixed; boundary="'.$boundary.'"'];
-if(!mail('info@garagepeter.be','Nieuwe aanvraag Roetfilter Specialist',$message,implode($eol,$headers),'-finfo@roetfilter-specialist.be'))finish(503,'Verzenden lukt momenteel niet. Mail je aanvraag naar info@garagepeter.be of bel 059 33 33 11.');
+if(!mail('info@garagepeter.be',($fr?'[FRANSTALIGE AANVRAAG] Roetfilter Specialist':'Nieuwe aanvraag Roetfilter Specialist'),$message,implode($eol,$headers),'-finfo@roetfilter-specialist.be'))finish(503,'Verzenden lukt momenteel niet. Mail je aanvraag naar info@garagepeter.be of bel 059 33 33 11.');
 finish(200,'Bedankt! Je aanvraag is verzonden. We nemen contact met je op. Dit is nog geen afspraakbevestiging.');
